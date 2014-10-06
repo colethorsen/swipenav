@@ -50,4 +50,8 @@
 <p><a href="http://docs.jquery.com/Downloading_jQuery">jQuery 1.7 or higher</a></p>
 <h2>License</h2>
 <p>Available for use in all personal or commercial projects under both <a href="MIT-LICENSE.txt">MIT</a> and <a href="GPL-LICENSE.txt">GPL licenses</a>.</p>
-<p>Copyright (c) 2012 <a href="http://lazaworx.com">Molnar Laszlo</a></p>
+
+
+<h2>Based On</h2>
+
+<a href="https://github.com/Laza/addswipe-plugin">AddSwipe Plugin</a> by <a href="http://lazaworx.com">Molnar Laszlo</a>
