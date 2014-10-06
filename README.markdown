@@ -22,6 +22,7 @@
 	<li><code>resetswipe</code> moves the layer to the starting position</li> 
 </ul>
 <h2>Example</h2>
+<pre><code>
 <script>
 	//this would be an expected setup to reveal nav under a page. The body would be set to be swipable and would allow 250px to be revealed  under the body for navigation.
 
