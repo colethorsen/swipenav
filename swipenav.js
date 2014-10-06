@@ -1,5 +1,6 @@
-// addSwipe :: adding swipe gesture support to a layer
-// http://lazaworx.com/addswipe-plugin/
+//Swipenav is based on:
+// addSwipe :: adding swipe gesture support to a layer http://lazaworx.com/addswipe-plugin/
+//with updates and revisions by Cole Thorsen (impulsestudios.ca)
 
 (function($) {
 
