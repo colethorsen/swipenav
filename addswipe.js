@@ -27,9 +27,9 @@
 		return this.each(function() {
 			
 			var t = $(this);
-			var xs, dist, ex = 0, tx = 0, tx1 = 0, x0, tt, speed;
+			var xs, dist, ex = 0, ey = 0, tx = 0, ty = 0, tx1 = 0, x0, tt, speed;
 			
-			t.attr('draggable', 'true');
+			//t.attr('draggable', 'true');
 			
 			// retrieving the event's X position
 			
@@ -37,10 +37,15 @@
 				return ex = ( e.touches && e.touches.length > 0 )? e.touches[0].clientX : ( e.clientX ? e.clientX : ex );
 			};
 			
+			var getY = function(e) {
+				return ey = ( e.touches && e.touches.length > 0 )? e.touches[0].clientY : ( e.clientY ? e.clientY : ey );
+			};
+
 			// registering start position
 			
 			var setPos = function(e) {
 				tx = getX(e);
+				ty = getY(e);
 			};
 			
 			var noAction = function(e) {
@@ -49,15 +54,43 @@
 			
 			// moving the element
 			
+			var animate = function(left, time) {
+				
+				var transform = 'translate3d('+left+'px,0,0)',
+					transition = time ? 'transform '+time+'ms ease' : 'transform 0';
+
+				t.css({
+					WebkitTransform		: transform,
+					MOZTransform		: transform,
+					OTransform			: transform,
+					MSTransform			: transform,
+					Transform			: transform,
+					WebkitTransition	: '-webkit-'+transition,
+					MozTransition		: '-moz-'+transition,
+					OTransition			: '-o-'+transition,
+					MSTransition		: '-ms-'+transition,
+					Transition			: transition
+				});
+			};
+
 			var dragMove = function(e) {
+				
 				if ( tx ) {
-					t.css({
-						left: (getX(e) - tx + x0)
-					});
+				
+					if(Math.abs(getX(e) - tx) > Math.abs(getY(e) - ty)) {
+
+						animate(getX(e) - tx + x0);
+
+						return false;
+					} else {
+						return true;
+					}
 				} else { // Wrong dragstart event coordinate :: starting now
 					tx = getX(e);
+					ty = getY(e);
+					return false;
 				}
-				return false;
+				
 			};
 			
 			// stopped dragging
@@ -72,9 +105,9 @@
 				if ( $.support.touch ) {
 					this.ontouchmove = null;
 					this.ontouchend = null;
-				} else {
+				} /*else {
 					$(document).off('mousemove', dragMove).off('mouseup click', dragStop);
-				}
+				}*/
 				
 				if ( Math.abs(dx) > settings.minDist ) {
 					
@@ -99,30 +132,40 @@
 							eff = 'easeOutBack';
 						}
 					}
-					
-					t.animate({
-						left: x1
-					}, 500, eff);
+
+					if ( settings.maxLeft !== false) {
+						if ( x1 <  -settings.maxLeft) {
+							x1 = - settings.maxLeft;
+							eff = 'easeOutBack';
+						}
+					}
+
+					if ( settings.maxRight !== false) {
+						if ( x1 > settings.maxRight) {
+							x1 = settings.maxRight;
+							eff = 'easeOutBack';
+						}
+					}
+
+					animate(x1, 250);
 					
 					// Calling the appropriate function
 					
-					if ( dx < 0 ) { 
+					if ( dx < 0 ) {
 						if ( $.isFunction(leftFn) ) {
-							leftFn.call(); 
+							leftFn.call(this, x1);
 						}
 					} else if ( $.isFunction(rightFn) ) {
-						rightFn.call();
+						rightFn.call(this, x1);
 					}
 					
 				} else {
 					
 					// Just a small move - let the click event happen
 					
-					t.animate({
-						left: x0
-					}, 200);
+					animate(x0, 200);
 					
-					t.trigger('click');
+					t.trigger('touchstart');
 				}
 				
 				return false;
@@ -132,20 +175,25 @@
 			
 			var touchStart = function(e) {
 				
-				if ( (e.type === 'touchstart' || e.type === 'touchmove') && 
-					(!e.touches || e.touches.length > 1 || t.is(':animated')) ) {
-					// >= 2 finger flick
-					return true;
+				if(settings.enableSwipe) {
+
+					if ( (e.type === 'touchstart' || e.type === 'touchmove') &&
+						(!e.touches || e.touches.length > 1 || t.is(':animated')) ) {
+						
+						e.trigger('touchend');
+
+						return true;
+					}
+					setPos(e);
+					dragStart(e);
 				}
-				setPos(e);
-				dragStart(e);
 			};
 			
 			// start dragging
 			
 			var dragStart = function(e) {
 				
-				t.stop(true, false);
+				
 				x0 = t.position().left;
 				tt = new Date().getTime();
 				dist = 0;
@@ -154,7 +202,7 @@
 					this.ontouchmove = dragMove;
 					this.ontouchend = dragStop;
 					return true;
-				} else {
+				} /*else {
 					t.off('click');
 					t.click(noAction);
 					$(document).on({
@@ -163,29 +211,57 @@
 					});
 					e.cancelBubble = true;
 					return false;
-				}
+				}*/
 			};
 			
 			// initializing 
 			
 			if ($.support.touch) {
 				this.ontouchstart = touchStart;
-			} else {
+			}/* else {
 				t.on({
 					'dragstart': dragStart,
 					'mousedown': setPos
 				});
-			}
+			}*/
 			
 			// reset function
 			
 			xs = t.position().left;
 			
 			t.on('resetswipe', function() {
-				t.stop(true, false).animate({
-					left: xs
-				}, 500, 'easeOutBack');
+			
+				animate(xs, 250);
+
 				return false;
+			});
+
+			t.on('swipeto', function(e, x1, time) {
+
+				if(e.target.className == t.context.className) { //this solves a weird problem of the homepage swipe triggering the nav
+
+					if ( settings.keepWithin ) {
+
+						var cw = t.parent().width(), tw = t.width(), gw;
+							
+						if ( settings.snapGrid ) {
+							gw = cw / settings.snapGrid;
+							x1 = Math.round(Math.round(x1 / gw) * gw);
+						}
+
+						if ( settings.keepWithin ) {
+							if ( x1 < 0 && (tw + x1) < cw ) {
+								x1 = cw - tw;
+							} else if ( x1 > 0 && (tw + x1) > cw ) {
+								x1 = 0;
+							}
+						}
+					}
+
+					animate(x1, time);
+
+					leftFn.call(this, x1);
+				}
 			});
 			
 			// removing the event handler
@@ -208,15 +284,18 @@
 			
 			// disabling text selection, because it conflicts with drag
 			
-			t.on('selectstart', noAction); 
+			//t.on('selectstart', noAction); 
 
 		});
 	};
 	
 	$.fn.addSwipe.defaults = {
-		minDist: 40,
+		minDist: 80,
 		snapGrid: 0,
-		keepWithin: true
+		keepWithin: true,
+		enableSwipe: true,
+		maxLeft: false,
+		maxRight: false
 	};
 	
 })(jQuery);
